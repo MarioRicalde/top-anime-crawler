@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html class="no-js" lang="en">
+  <!--<![endif]-->
+  <head>
+    <meta charset="utf-8" />
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible" />
+    <title>Scrapper</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+    <script type="text/javascript">
+      /* 
+       * jQuery Condom (Use namespaces to protect your global integrity.) 
+       * Version 0.0.1 
+       * 
+       * Copyright (c) 2011 Mario "Kuroir" Ricalde (http://kuroir.com)  
+       *   & Micha Niskin (micha@thinkminimo.com) 
+       * Licensed jointly under the GPL and MIT licenses, 
+       * choose which one suits your project best! 
+       */ 
+      (function($) { 
+        var methods = {}; 
+        $.ns = function(ns) { 
+          // Define namespace if it doesn't exist.
+          methods[ns] =  methods[ns] || {}; 
+          return { 
+            // Add a method.
+            add: function(fname, fn) { 
+              var new_funcs = typeof fname == "object" ? fname : {}; 
+              // One method.
+              if (new_funcs !== fname) 
+                new_funcs[fname] = fn; 
+              // Group of methods.
+              $.each(new_funcs, function(fname, fn) { 
+                methods[ns][fname] = function() { 
+                  fn.apply(this, arguments); 
+                  return this; 
+                }; 
+              }); 
+              return this; 
+            },
+            // Get methods.
+            methods: function() { 
+              return $.extend({}, methods[ns]); 
+            } 
+          }; 
+        };
+        // The only function that touches $.fn
+        $.fn.ns = function(ns) { 
+          if (methods[ns]) $.extend(this, methods[ns]); 
+          return this; 
+        }; 
+      })(jQuery);
+    </script>
+    <script type="text/javascript">
+      var socket;
+      
+      $.ns('app').add({
+        // Function to append the image with a Google Search Link
+        append_image: function(img) {
+          // Google Link Search.
+          var url = 'http://www.google.com.mx/search?sourceid=chrome&ie=UTF-8&q=STR+site%3Amyanimelist.net';
+          $(this).append(
+            $("<a>").attr(
+              'href', url.replace(/STR/, $(img).attr('alt').replace(/ /g, '+'))
+            ).append(
+              $(img).width(289).height(450).hide().fadeIn()
+            )
+          );
+        },
+        clear: function() {
+          $(this).children().remove();
+        },
+        connect_sockets: function() {
+          log('Connecting Sockets');
+          socket = new WebSocket('ws://localhost:8080');
+          socket.onopen = function() {
+            
+          };
+          socket.onclose = function() {
+            
+          };
+          socket.onmessage = function(mes) {
+            var mes        = mes.data,
+                $content   = $('#content').ns('app');
+            // Image
+            if (mes.match(/img/)) {
+              $content.append_image(mes);
+            } else {
+              log(mes);
+            }
+          };
+        }
+      });
+      
+      function log(mes) { console.log(mes)}
+
+
+      function crawl() { $('#content').ns('app').clear(); socket.send('start'); }
+      function cache() { socket.send('cache'); }
+      $('document').ready(function() {
+        $().ns('app').connect_sockets();
+      });
+    </script>
+  </head>
+  <body>
+    <div id="content"></div>
+  </body>
+</html>
